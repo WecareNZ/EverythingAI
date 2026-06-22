@@ -167,6 +167,60 @@ makes them organisation-wide, not new.
   location** and whether data leaves NZ; **retention/deletion** policy. This is
   a hard gate for any PHI-handling skill.
 
+### 7a. NZ acceptance pathway (endorsement, not "approval")
+
+There is **no blanket government "approval"** for ambient scribes. The comparable
+benchmark (Heidi) was **endorsed for trial by Health NZ's National AI & Algorithm
+Expert Advisory Group** — and only the **Enterprise** edition. That is an
+institutional endorsement, *not* a Medsafe device clearance. Scribes currently
+sit outside medical-device regulation, but that could change (Medicines Act 1981
+/ Therapeutic Products Act) — and our **clinical decision-support** features are
+the part most likely to be pulled in.
+
+The bar that earned acceptance — and therefore ours — is a **combination**:
+
+- **Privacy Act 2020 + Information Privacy Principles (IPPs)** compliance.
+- **Certifications: ISO 27001** (information security), **ISO 42001** (AI
+  management — the AI-specific standard, increasingly the expected credential for
+  clinical AI in NZ), and **SOC 2**.
+- **NZ localisation** — clinical language, systems, terminology.
+- **Regional storage** (NZ, or AU under DPAs) and **no audio retention**.
+
+Action: engage the Health NZ AI/Algorithm advisory pathway for institutional use,
+and get a **Medsafe / medical-device read before the clinical-decision-support
+skills go live**.
+
+### 7b. De-identification flow
+
+De-identification is **required, but it is one layer** — pair it with the
+processor controls and ASR residency, don't rely on it alone.
+
+```
+Transcript (identified)
+   │  strip direct identifiers locally; keep clinically-relevant attributes
+   ▼
+"John Doe, 37yo male, ..."  ──►  LLM  ──►  de-identified note
+   │
+   └─ identity map kept in the trusted zone ─► re-insert locally ─► record
+```
+
+- **Pseudonymise before the LLM:** strip name / DOB / NHI; keep age + sex;
+  re-insert identifiers locally before the note enters the record. The identity
+  map never leaves the trusted zone.
+- **The note must end up identified** — you cannot de-identify the primary
+  output; de-id protects the *third-party hops*, not the record.
+- **Free-text identifiers are the hard part.** Names/DOB/NHI in structured fields
+  are easy; identifiers spoken in conversation ("my husband Dave at the Rotorua
+  mill", "Dr Patel referred me") need PII/PHI detection (NER) and are imperfect.
+- **De-id ≠ anonymisation.** Clinical content (rare condition + locality +
+  occupation + age) can still re-identify — it *reduces* risk, not eliminates it.
+- **ASR sees identifiable audio *before* de-id is possible.** De-identifying at
+  the LLM stage does nothing for the transcription hop — so the **ASR must be
+  residency/no-retention safe (in-region managed, or self-hosted)** independently.
+- **How hard we lean on de-id depends on LLM hosting.** With an in-region,
+  no-train/no-retention LLM (e.g. Bedrock Sydney), de-id is defense-in-depth;
+  without those guarantees it becomes the primary protection and must be robust.
+
 ## 8. Content lifecycle
 
 The system is only as good as its corpora.
