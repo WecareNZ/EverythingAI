@@ -189,10 +189,25 @@
           <div class="field"><div class="k">Examination</div>Bilateral dull, retracted tympanic membranes with effusion. No acute discharge.</div>
           <div class="field"><div class="k">Plan</div>Discuss grommets referral — see assessment below.</div>
         </div>
-        <p class="muted">↓ You can ask the assistant about this consult without leaving the screen.</p>
+      </div>
+
+      <!-- docked, always-on Ask panel for the whole consult -->
+      <div class="panel hidden" id="c-ask" style="position:sticky;bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="badge ai">💬 Ask — using this consult as context</span>
+          <span class="muted" id="ctx-state">listening live…</span>
+        </div>
         <div class="chat" id="consult-chat"></div>
         <div class="suggest" style="margin-top:10px">
-          <button class="chip" onclick="askConsult('Does this meet criteria for a grommets referral?')">Does this meet criteria for a grommets referral?</button>
+          <button class="chip" onclick="askConsult('Does this meet criteria for a grommets referral?')">Should I refer for grommets?</button>
+          <button class="chip" onclick="askConsult('What investigation should I order?')">What should I order?</button>
+          <button class="chip" onclick="askConsult('What billing code should I use for this consult?')">What billing code?</button>
+          <button class="chip" onclick="askConsult('Is there funding for this?')">Is there funding?</button>
+          <button class="chip" onclick="askConsult('I am about to do an intimate exam — what is the chaperone protocol?')">Chaperone protocol?</button>
+        </div>
+        <div class="composer">
+          <input id="consult-input" placeholder="Ask about this patient…" onkeydown="if(event.key==='Enter')askConsult(this.value)">
+          <button onclick="askConsult(document.getElementById('consult-input').value)">Send</button>
         </div>
       </div>
     </div>
@@ -263,6 +278,9 @@ const TRANSCRIPT=["Mum: He's had so many ear infections this year…","Clinician
 function startListen(){
   document.getElementById('c-consent').classList.add('hidden');
   document.getElementById('c-listening').classList.remove('hidden');
+  document.getElementById('c-ask').classList.remove('hidden');
+  document.getElementById('consult-chat').innerHTML='';
+  document.getElementById('ctx-state').textContent='listening live…';
   secs=0; let i=0; const t=document.getElementById('transcript'); t.textContent='';
   timerInt=setInterval(()=>{secs++;document.getElementById('timer').textContent=String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0');
     if(secs%2===0&&i<TRANSCRIPT.length){t.textContent+=(i?'\n':'')+TRANSCRIPT[i++];t.scrollTop=t.scrollHeight;}},500);
@@ -271,9 +289,38 @@ function endListen(){
   clearInterval(timerInt);
   document.getElementById('c-listening').classList.add('hidden');
   document.getElementById('c-note').classList.remove('hidden');
-  document.getElementById('consult-chat').innerHTML='';
+  document.getElementById('ctx-state').textContent='consult ended · context retained';
 }
-function askConsult(q){ renderClinicalAnswer(document.getElementById('consult-chat'), q, true); }
+
+/* The in-consult Ask is the FULL assistant (all skills), answering in the
+   context of this consult — clinical, investigations, billing, funding, policy. */
+function askConsult(q){
+  q=(q||'').trim(); if(!q) return;
+  const chat=document.getElementById('consult-chat');
+  const inp=document.getElementById('consult-input'); if(inp) inp.value='';
+  add(chat,'me',q);
+  const low=q.toLowerCase();
+  const ctx="<span class='muted'>In the context of this consult (4yo, recurrent AOM, bilateral OME &gt;3/12, hearing impact):</span><br>";
+  const frame = role.framed ? "<div class='frame'>⚠ This decision is outside standing-order scope — confirm with the supervising / prescribing clinician.</div>" : "";
+
+  if(low.includes('grommet')||low.includes('refer')){
+    renderClinicalAnswer(chat,q,true);
+  } else if(low.includes('blood')||low.includes('investigation')||low.includes('test')||low.includes('order')){
+    add(chat,'ai',ctx+"Routine bloods aren't indicated here. Arrange <b>formal audiometry + tympanometry</b> before ENT referral — that's the investigation HealthPathways expects attached. Consider speech-language review if delay is confirmed."+frame,"HealthPathways (WeCare copy) · OME — investigations");
+  } else if(low.includes('billing')||low.includes('code')){
+    add(chat,'ai',ctx+"Extended consult (&gt;15 min) with otoscopy and a referral generated, enrolled child &lt;14. Use the <b>standard enrolled-child consult code</b> (capitated). The referral isn't separately billable; no procedure code applies.","WeCare Billing & Coding Guide 2026 · Enrolled child consults");
+  } else if(low.includes('charge')||low.includes('cost')||low.includes('how much')){
+    add(chat,'ai',ctx+"Enrolled child under 14: <b>$0 to the family</b> — fully funded (zero-fees-under-14 / capitation). No charge for this consult or the referral.","WeCare Patient Fees schedule 2026 · Under-14 funding");
+  } else if(low.includes('fund')||low.includes('subsid')||low.includes('special authority')||low.includes('pharmac')){
+    add(chat,'ai',ctx+"Once referred and accepted, the grommets procedure is <b>publicly funded</b> via the ENT service — no special authority required. Audiology is covered under the paediatric pathway; no PHARMAC special-authority items involved.","HealthPathways (WeCare copy) · Grommets funding & ENT criteria");
+  } else if(low.includes('chaperone')||low.includes('vaginal')||low.includes('intimate')||low.includes('speculum')){
+    add(chat,'ai',"<b>WeCare chaperone protocol — intimate examinations:</b> offer a chaperone to <i>every</i> patient regardless of clinician gender; record the offer and the patient's response in the notes. Use a trained staff member (not a family member). If declined, document it — you may still decline to proceed without one. Record the chaperone's name.","WeCare Clinical Policy · Chaperones for intimate examinations");
+  } else if(low.includes('summar')){
+    add(chat,'ai',"<b>So far:</b> 4yo, ≥4 AOM episodes in 12 months, persistent bilateral OME &gt;3/12, hearing impact at home and kindy. Exam: bilateral effusion, retracted TMs. Heading toward a grommets referral.","Live consult context");
+  } else {
+    add(chat,'ai',ctx+"I'd answer that grounded in WeCare protocol and policy, using this consult's context. <span class='muted'>(Rough demo — a few example questions are wired up.)</span>");
+  }
+}
 
 /* ---------- ask flow ---------- */
 function sendAsk(){
@@ -297,8 +344,9 @@ function sendAsk(){
 
 /* shared clinical answer — identical in consult and ask, proving one brain */
 function renderClinicalAnswer(chat, q, inConsult){
-  if(!inConsult) {} else add(chat,'me',q);
-  let html = "<b>Yes — this meets HealthPathways criteria for a grommets (tympanostomy) referral.</b><br>"
+  let html = "";
+  if(inConsult) html += "<span class='muted'>In the context of this consult (4yo, recurrent AOM, bilateral OME &gt;3/12, hearing impact):</span><br>";
+  html += "<b>Yes — this meets HealthPathways criteria for a grommets (tympanostomy) referral.</b><br>"
     +"<span class='muted'>Checked against:</span> bilateral OME &gt;3 months ✓ · documented hearing impact ✓ · ≥3–4 AOM episodes / 12 months ✓"
     +"<div class='referral'><div class='k'>📄 Draft referral — ENT / Grommets (HealthPathways format)</div>"
     +"Patient: [4yo, M] · Indication: Bilateral OME &gt;3/12 with hearing impact & recurrent AOM<br>"
