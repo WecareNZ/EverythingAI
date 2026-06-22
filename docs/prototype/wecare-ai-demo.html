@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeCare AI — Prototype</title>
+<style>
+  :root{
+    --bg:#0f1720; --panel:#ffffff; --ink:#0f1720; --muted:#5b6b7a;
+    --line:#e4e9ef; --brand:#0e7c86; --brand-dk:#0a5b63; --brand-soft:#e6f4f5;
+    --accent:#2563eb; --warn:#b45309; --warn-soft:#fef3e2; --ok:#15803d; --ok-soft:#e8f5ec;
+    --shadow:0 10px 30px rgba(15,23,32,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#eef2f6}
+  button{font:inherit;cursor:pointer}
+  .hidden{display:none!important}
+
+  /* shell */
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 18px;position:sticky;top:0;z-index:5}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.2px}
+  .logo .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--brand),#16a3b0);display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px}
+  .spacer{flex:1}
+  .userchip{display:flex;align-items:center;gap:9px}
+  .avatar{width:30px;height:30px;border-radius:50%;background:#cdd9e3;display:grid;place-items:center;font-weight:700;color:#34495a;font-size:13px}
+  .role-tag{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--brand-soft);color:var(--brand-dk)}
+  .linkbtn{border:none;background:none;color:var(--muted);font-size:13px;text-decoration:underline}
+
+  .wrap{max-width:920px;margin:0 auto;padding:26px 18px 60px}
+
+  /* login */
+  .login{min-height:100vh;display:grid;place-items:center;background:radial-gradient(1200px 600px at 50% -10%,#13343b,#0f1720)}
+  .login-card{background:var(--panel);border-radius:18px;padding:34px;width:380px;box-shadow:var(--shadow);text-align:center}
+  .login-card .mark{width:46px;height:46px;border-radius:12px;margin:0 auto 14px;background:linear-gradient(135deg,var(--brand),#16a3b0);display:grid;place-items:center;color:#fff;font-weight:800;font-size:20px}
+  .login-card h1{font-size:21px;margin:0 0 4px}
+  .login-card p{color:var(--muted);margin:0 0 22px;font-size:13px}
+  .ms-btn{width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px;display:flex;gap:10px;align-items:center;justify-content:center;font-weight:600}
+  .ms-btn:hover{background:#f6f9fb}
+  .ms-btn .g{width:18px;height:18px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
+  .ms-btn .g i{display:block;background:#0e7c86}
+  .demo-pick{margin-top:22px;border-top:1px dashed var(--line);padding-top:16px;text-align:left}
+  .demo-pick .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:700}
+  .demo-pick label{display:flex;gap:9px;align-items:flex-start;padding:8px;border-radius:9px;cursor:pointer}
+  .demo-pick label:hover{background:#f6f9fb}
+  .demo-pick small{color:var(--muted)}
+
+  /* cards / home */
+  h2.section{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 12px}
+  .greet{font-size:24px;font-weight:700;margin:4px 0 22px}
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:680px){.modes{grid-template-columns:1fr}}
+  .mode{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow);text-align:left;display:flex;flex-direction:column;gap:8px;transition:transform .08s}
+  .mode:hover{transform:translateY(-2px)}
+  .mode .ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-size:20px;margin-bottom:6px}
+  .mode.consult .ic{background:var(--brand-soft)}
+  .mode.ask .ic{background:#e8eefc}
+  .mode h3{margin:0;font-size:18px}
+  .mode p{margin:0;color:var(--muted);font-size:13.5px}
+  .mode .go{margin-top:10px;align-self:flex-start;background:var(--brand);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-weight:600}
+  .mode.ask .go{background:var(--accent)}
+  .note-row{margin-top:18px;font-size:13px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+
+  /* generic view header */
+  .vhead{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .back{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-weight:600;color:var(--muted)}
+  .vhead h2{margin:0;font-size:20px}
+
+  /* consult */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+  .consent label{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+  .primary{background:var(--brand);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-weight:600}
+  .primary:disabled{opacity:.45;cursor:not-allowed}
+  .ghost{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-weight:600}
+  .listening{display:flex;align-items:center;gap:12px;color:var(--brand-dk);font-weight:600}
+  .pulse{width:12px;height:12px;border-radius:50%;background:#e11d48;animation:p 1s infinite}
+  @keyframes p{0%,100%{opacity:1}50%{opacity:.25}}
+  .transcript{font-size:13.5px;color:#33485a;background:#f6f9fb;border-radius:10px;padding:12px;margin-top:12px;min-height:60px;white-space:pre-wrap}
+  .note h4{margin:0 0 6px;font-size:13px;color:var(--brand-dk);text-transform:uppercase;letter-spacing:.05em}
+  .note .field{margin-bottom:12px}
+  .note .field .k{font-weight:700;font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .badge.ai{background:#eef0ff;color:#4338ca}
+
+  /* chat */
+  .chat{display:flex;flex-direction:column;gap:14px}
+  .msg{max-width:82%;padding:11px 14px;border-radius:14px;font-size:14px}
+  .msg.me{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+  .msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+  .msg.ai .src{margin-top:9px;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:7px}
+  .frame{background:var(--warn-soft);border-left:3px solid var(--warn);padding:8px 10px;border-radius:6px;font-size:12.5px;color:#7c4a08;margin-top:9px}
+  .yes{color:var(--ok);font-weight:700}
+  .composer{display:flex;gap:10px;margin-top:8px}
+  .composer input{flex:1;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit}
+  .composer button{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:0 18px;font-weight:600}
+  .suggest{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;color:#33485a}
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .referral{border:1px dashed var(--brand);border-radius:12px;padding:14px;background:var(--brand-soft);margin-top:12px;font-size:13.5px}
+  .referral .k{font-weight:700;color:var(--brand-dk)}
+  .signrow{display:flex;gap:10px;margin-top:12px;align-items:center}
+  .muted{color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login" class="login">
+  <div class="login-card">
+    <div class="mark">W</div>
+    <h1>WeCare AI</h1>
+    <p>One assistant for every WeCare team member</p>
+    <button class="ms-btn" onclick="signIn()">
+      <span class="g"><i></i><i></i><i></i><i></i></span>
+      Sign in with your WeCare account
+    </button>
+    <div class="demo-pick">
+      <div class="lbl">Demo only — preview as</div>
+      <label><input type="radio" name="role" value="senior" checked>
+        <span><b>Dr Mere Walker</b> — Senior clinician (prescriber)<br><small>Sees consult + ask. Full clinical answers.</small></span></label>
+      <label><input type="radio" name="role" value="junior">
+        <span><b>Sina Tau</b> — Junior clinician (standing orders)<br><small>Sees consult + ask. Clinical answers are framed/escalated.</small></span></label>
+      <label><input type="radio" name="role" value="admin">
+        <span><b>Jess Lin</b> — Practice administrator<br><small>Ask only. No consult mode, no clinical access.</small></span></label>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="logo"><span class="mark">W</span> WeCare AI</div>
+    <div class="spacer"></div>
+    <div class="userchip">
+      <span class="avatar" id="avatar">MW</span>
+      <div>
+        <div style="font-weight:600;font-size:13.5px" id="uname">Dr Mere Walker</div>
+        <span class="role-tag" id="urole">Senior clinician</span>
+      </div>
+    </div>
+    <button class="linkbtn" onclick="signOut()">Sign out</button>
+  </div>
+
+  <div class="wrap">
+    <!-- HOME -->
+    <div id="home">
+      <div class="greet" id="greet">Kia ora, Mere</div>
+      <h2 class="section">What would you like to do?</h2>
+      <div class="modes">
+        <div class="mode consult" id="card-consult">
+          <div class="ic">🎙️</div>
+          <h3>Start a consult</h3>
+          <p>Listens during your consultation, writes the clinical note, and answers protocol questions in the moment.</p>
+          <button class="go" onclick="show('consult')">Start consult →</button>
+        </div>
+        <div class="mode ask">
+          <div class="ic">💬</div>
+          <h3>Ask anything</h3>
+          <p id="ask-blurb">Clinical questions grounded in our protocols, plus policy, leave, billing and more.</p>
+          <button class="go" onclick="show('ask')">Open assistant →</button>
+        </div>
+      </div>
+      <div class="note-row" id="home-note">
+        Same brain, same protocols — the answer to “does this meet grommets criteria?” is identical whether you ask it mid-consult or here at your desk.
+      </div>
+    </div>
+
+    <!-- CONSULT (Heidikiller surface) -->
+    <div id="consult" class="hidden">
+      <div class="vhead"><button class="back" onclick="show('home')">← Home</button><h2>🎙️ Consult</h2></div>
+
+      <div class="panel consent" id="c-consent">
+        <h4 style="margin:0 0 10px">Patient consent</h4>
+        <label><input type="checkbox" id="consentbox" onchange="document.getElementById('startBtn').disabled=!this.checked">
+          <span>I confirm the patient has consented to this consultation being recorded and transcribed by WeCare AI.</span></label>
+        <div style="margin-top:14px"><button class="primary" id="startBtn" disabled onclick="startListen()">Start listening</button></div>
+      </div>
+
+      <div class="panel hidden" id="c-listening">
+        <div class="listening"><span class="pulse"></span> Listening… <span class="muted" id="timer">00:00</span></div>
+        <div class="transcript" id="transcript"></div>
+        <div style="margin-top:14px"><button class="ghost" onclick="endListen()">End consult</button></div>
+      </div>
+
+      <div class="panel hidden note" id="c-note">
+        <span class="badge ai">✦ AI-generated clinical note · review before saving</span>
+        <div style="margin:14px 0 0">
+          <div class="field"><div class="k">Presenting complaint</div>4yo with recurrent ear infections; parental concern re: hearing and speech delay.</div>
+          <div class="field"><div class="k">History</div>≥4 episodes acute otitis media in past 12 months. Persistent bilateral effusion &gt;3 months. Noted hearing difficulty at home and kindy.</div>
+          <div class="field"><div class="k">Examination</div>Bilateral dull, retracted tympanic membranes with effusion. No acute discharge.</div>
+          <div class="field"><div class="k">Plan</div>Discuss grommets referral — see assessment below.</div>
+        </div>
+        <p class="muted">↓ You can ask the assistant about this consult without leaving the screen.</p>
+        <div class="chat" id="consult-chat"></div>
+        <div class="suggest" style="margin-top:10px">
+          <button class="chip" onclick="askConsult('Does this meet criteria for a grommets referral?')">Does this meet criteria for a grommets referral?</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASK (EverythingAI surface) -->
+    <div id="ask" class="hidden">
+      <div class="vhead"><button class="back" onclick="show('home')">← Home</button><h2>💬 Ask WeCare AI</h2></div>
+      <div class="panel">
+        <div class="suggest" id="ask-suggest"></div>
+        <div class="chat" id="ask-chat">
+          <div class="msg ai">Kia ora — how can I help? Everything I tell you is grounded in WeCare’s protocols.</div>
+        </div>
+        <div class="composer">
+          <input id="ask-input" placeholder="Ask a question…" onkeydown="if(event.key==='Enter')sendAsk()">
+          <button onclick="sendAsk()">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------- demo state ---------- */
+const ROLES = {
+  senior:{name:"Dr Mere Walker",initials:"MW",tag:"Senior clinician",greet:"Mere",clinical:true,framed:false},
+  junior:{name:"Sina Tau",initials:"ST",tag:"Junior clinician",greet:"Sina",clinical:true,framed:true},
+  admin:{name:"Jess Lin",initials:"JL",tag:"Practice administrator",greet:"Jess",clinical:false,framed:false}
+};
+let role = ROLES.senior;
+
+function signIn(){
+  const v=document.querySelector('input[name=role]:checked').value;
+  role=ROLES[v];
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  applyRole(); show('home');
+}
+function signOut(){location.reload();}
+
+function applyRole(){
+  document.getElementById('uname').textContent=role.name;
+  document.getElementById('avatar').textContent=role.initials;
+  document.getElementById('urole').textContent=role.tag;
+  document.getElementById('greet').textContent="Kia ora, "+role.greet;
+  // consult card + clinical messaging only for clinical roles
+  document.getElementById('card-consult').style.display = role.clinical?'flex':'none';
+  document.getElementById('home-note').style.display = role.clinical?'block':'none';
+  document.getElementById('ask-blurb').textContent = role.clinical
+    ? "Clinical questions grounded in our protocols, plus policy, leave, billing and more."
+    : "Policy, leave, billing, dress code and other staff questions — grounded in WeCare policy.";
+  buildSuggest();
+}
+
+function buildSuggest(){
+  const s=document.getElementById('ask-suggest'); s.innerHTML='';
+  const items = role.clinical
+    ? ["Does this meet criteria for a grommets referral?","What's our protocol for paediatric otitis media?","How much annual leave do I have?"]
+    : ["How much annual leave do I have?","What's the dress code for clinical staff?","How much does an ACC consult cost the patient?"];
+  items.forEach(t=>{const b=document.createElement('button');b.className='chip';b.textContent=t;b.onclick=()=>{document.getElementById('ask-input').value=t;sendAsk();};s.appendChild(b);});
+}
+
+function show(v){['home','consult','ask'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(v).classList.remove('hidden');window.scrollTo(0,0);}
+
+/* ---------- consult flow ---------- */
+let timerInt, secs=0;
+const TRANSCRIPT=["Mum: He's had so many ear infections this year…","Clinician: How many courses of antibiotics roughly?","Mum: Four, maybe five since last winter.","Clinician: And you've noticed his hearing?","Mum: Yeah, at kindy too — they've mentioned it.","Clinician: Let's have a look in those ears…"];
+function startListen(){
+  document.getElementById('c-consent').classList.add('hidden');
+  document.getElementById('c-listening').classList.remove('hidden');
+  secs=0; let i=0; const t=document.getElementById('transcript'); t.textContent='';
+  timerInt=setInterval(()=>{secs++;document.getElementById('timer').textContent=String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0');
+    if(secs%2===0&&i<TRANSCRIPT.length){t.textContent+=(i?'\n':'')+TRANSCRIPT[i++];t.scrollTop=t.scrollHeight;}},500);
+}
+function endListen(){
+  clearInterval(timerInt);
+  document.getElementById('c-listening').classList.add('hidden');
+  document.getElementById('c-note').classList.remove('hidden');
+  document.getElementById('consult-chat').innerHTML='';
+}
+function askConsult(q){ renderClinicalAnswer(document.getElementById('consult-chat'), q, true); }
+
+/* ---------- ask flow ---------- */
+function sendAsk(){
+  const inp=document.getElementById('ask-input'); const q=inp.value.trim(); if(!q)return; inp.value='';
+  const chat=document.getElementById('ask-chat');
+  add(chat,'me',q);
+  const low=q.toLowerCase();
+  if(low.includes('grommet')||low.includes('referral')||low.includes('otitis')){
+    if(role.clinical) renderClinicalAnswer(chat,q,false);
+    else add(chat,'ai',"That's a clinical question and isn't available on your account. I can help with policy, leave, billing or other staff topics.");
+  } else if(low.includes('leave')){
+    add(chat,'ai',"You have <b>18.5 days</b> of annual leave available (as of today). Leave is accrued per the WeCare Employment Policy and can be requested in the staff portal.","WeCare Employment Policy · Leave & Entitlements");
+  } else if(low.includes('dress')){
+    add(chat,'ai',"Clinical staff: WeCare-issued scrubs or tunic, closed-toe footwear, hair tied back, minimal jewellery. Full guidance in the Uniform & Presentation Policy.","WeCare Uniform & Presentation Policy");
+  } else if(low.includes('cost')||low.includes('acc')){
+    add(chat,'ai',"A standard ACC consult is <b>$0 to the patient</b> (covered); a non-ACC standard consult is <b>$19.50</b> for enrolled patients. See the Patient Fees schedule.","WeCare Patient Fees schedule 2026");
+  } else {
+    add(chat,'ai',"I'd answer that grounded in WeCare's protocols and policies. (This is a rough demo — only a few sample questions are wired up.)");
+  }
+}
+
+/* shared clinical answer — identical in consult and ask, proving one brain */
+function renderClinicalAnswer(chat, q, inConsult){
+  if(!inConsult) {} else add(chat,'me',q);
+  let html = "<b>Yes — this meets HealthPathways criteria for a grommets (tympanostomy) referral.</b><br>"
+    +"<span class='muted'>Checked against:</span> bilateral OME &gt;3 months ✓ · documented hearing impact ✓ · ≥3–4 AOM episodes / 12 months ✓"
+    +"<div class='referral'><div class='k'>📄 Draft referral — ENT / Grommets (HealthPathways format)</div>"
+    +"Patient: [4yo, M] · Indication: Bilateral OME &gt;3/12 with hearing impact & recurrent AOM<br>"
+    +"Audiometry: [attach/auto-pull] · Tympanometry: Type B bilaterally<br>"
+    +"Relevant history, exam findings and required HP fields pre-filled.</div>"
+    +"<div class='signrow'><button class='primary' onclick=\"this.outerHTML='<span class=&quot;yes&quot;>✓ Signed by "+role.name+" — sent</span>'\">Review & sign</button><span class='muted'>You stay the author — AI drafts, you sign, then it sends.</span></div>";
+  if(role.framed){
+    html = "Here's what our protocol says, with a flag for your scope:<br>"+html
+      +"<div class='frame'>⚠ This is outside standing-order scope. The referral needs a prescriber / senior clinician to review and sign. I've drafted it and flagged it for escalation.</div>";
+  }
+  add(chat,'ai',html,"HealthPathways (WeCare copy) · Grommets / Tympanostomy referral criteria");
+}
+
+function add(chat,who,html,src){
+  const d=document.createElement('div'); d.className='msg '+who; d.innerHTML=html;
+  if(src){const s=document.createElement('div');s.className='src';s.textContent='📚 Source: '+src;d.appendChild(s);}
+  chat.appendChild(d); chat.scrollTop=chat.scrollHeight;
+}
+</script>
+</body>
+</html>
